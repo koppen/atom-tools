@@ -25,6 +25,17 @@ class FakeHTTP
 end
 
 class AtomProtocolTest < Test::Unit::TestCase
+  attr_reader :have_hpricot
+
+  def initialize *args
+    super
+
+    require "hpricot"
+    @have_hpricot = true
+  rescue LoadError
+    puts "skipping hpricot tests"
+  end
+
   def test_introspection
     doc = <<END
 <service xmlns="http://www.w3.org/2007/app"
@@ -123,6 +134,8 @@ END
   end
 
   def test_autodiscover_service_link
+    return unless have_hpricot
+
     http = FakeHTTP.new \
       'http://example.org/' => [ 'text/html', '<html><link rel="service" href="svc">' ],
       'http://example.org/xhtml' => [ 'text/html', '<html><head><link rel="service" href="svc"/></head></html>' ],
@@ -136,6 +149,8 @@ END
   end
 
   def test_autodiscover_rsd
+    return unless have_hpricot
+
     http = FakeHTTP.new \
       'http://example.org/' => [ 'text/html', '<html><link rel="EditURI" href="rsd">' ],
       'http://example.org/svc' => [ 'application/atomsvc+xml', '<service xmlns="http://www.w3.org/2007/app"/>' ],
@@ -154,6 +169,8 @@ END
   end
 
   def test_cant_autodiscover
+    return unless have_hpricot
+
     http = FakeHTTP.new 'http://example.org/h' => [ 'text/html', '<html>' ],
                        'http://example.org/t' => [ 'text/plain', 'no joy.' ]
 
