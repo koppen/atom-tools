@@ -1,6 +1,7 @@
 require "net/http"
 require "net/https"
 require "uri"
+require "cgi"
 
 require "atom/cache"
 
@@ -130,6 +131,8 @@ module Atom
     #
     # defaults to nil
     attr_accessor :always_auth
+    # if this is true, we tell Net::HTTP to die if it can't verify the SSL when doing https
+    attr_accessor :strict_ssl
 
     # automatically handle redirects, even for POST/PUT/DELETE requests?
     #
@@ -254,8 +257,89 @@ module Atom
       req["Authorization"] = 'WSSE profile="UsernameToken"'
     end
 
-    def authsub_authenticate req, url
+    def authsub_authenticate req, url, param_string = ""
       req["Authorization"] = %{AuthSub token="#{@token}"}
+    end
+
+    # GoogleLogin support thanks to Adrian Hosey
+    def googlelogin_authenticate(req, url, param_string)
+      params_h = Hash.new
+      param_string.split(',').each do |p|
+        k, v = p.split('=')
+        # No whitespace in the key
+        k.delete!(' ')
+        # Values come wrapped in doublequotes - remove
+        v.gsub!(/^"|"$/, '')
+        params_h[k] = v
+      end
+
+      abs_url = (url + "/").to_s
+      user, pass = @get_auth_details.call(abs_url, params_h["realm"])
+      token = fetch_googlelogin_token(user, pass, params_h["realm"], params_h["service"])
+      if !token.nil?
+        req["Authorization"] = "GoogleLogin auth=#{token}"
+      end
+    end
+
+    def fetch_googlelogin_token(user, pass, url_s, service)
+      req, url = new_request(url_s, Net::HTTP::Post)
+      http_obj = Net::HTTP.new(url.host, url.port)
+      if url.scheme == "https"
+        http_obj.use_ssl = true
+        probe_for_cafile(http_obj)
+      end
+
+      tools_version = Gem.loaded_specs['atom-tools'].version.to_s
+      body = "Email=#{CGI.escape(user)}&Passwd=#{CGI.escape(pass)}&service=#{CGI.escape(service)}"
+      body += "&accountType=GOOGLE&source=ruby-atom-tools-#{CGI.escape(tools_version)}"
+      res = http_obj.start do |h|
+        h.request(req, body)
+      end
+
+      retval = nil
+      case res
+      when Net::HTTPUnauthorized
+        raise Unauthorized, "Your authorization was rejected"
+      when Net::HTTPOK, Net::HTTPNonAuthoritativeInformation
+        res.body.each_line do |l|
+          k, v = l.split('=')
+          if k == "Auth"
+            retval = v.chomp
+          end
+        end
+      end
+
+      retval
+    end
+
+    # Look for a root CA file and set the relevant options on the passed-in Net::HTTP object.
+    def probe_for_cafile(http_obj)
+      ca_possibles = [
+        '/usr/share/curl/curl-ca-bundle.crt', # OS X
+        '/etc/pki/tls/certs/ca-bundle.crt', # newer Redhat
+        '/usr/share/ssl/certs/ca-bundle.crt', # older Redhat
+        '/etc/ssl/certs/ca-certificates.crt', # Ubuntu (I think)
+        # <irony>Dear LSB: Thank you for standardizing Linux</irony>
+      ]
+      cafile = nil
+      ca_possibles.each do |ca|
+        if File.exist? ca
+          cafile = ca
+          break
+        end
+      end
+      if cafile.nil?
+        if @strict_ssl
+          # set this knowing it will die, since we didn't find a good cafile
+          http_obj.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        else
+          http_obj.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+      else
+        http_obj.ca_file = cafile
+        http_obj.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        http_obj.verify_depth = 5
+      end
     end
 
     def username_and_password_for_realm(url, realm)
@@ -313,7 +397,10 @@ module Atom
       end
 
       http_obj = Net::HTTP.new(url.host, url.port)
-      http_obj.use_ssl = true if url.scheme == "https"
+      if url.scheme == "https"
+        http_obj.use_ssl = true
+        probe_for_cafile(http_obj)
+      end
 
       res = http_obj.start do |h|
         h.request(req, body)
