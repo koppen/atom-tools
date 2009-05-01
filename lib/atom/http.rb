@@ -17,7 +17,8 @@ class String # :nodoc:
 end
 
 module Atom
-  UA = "atom-tools 2.0.1"
+  TOOLS_VERSION = '2.0.2'
+  UA = "atom-tools " + TOOLS_VERSION
 
   module DigestAuth
     CNONCE = Digest::MD5.hexdigest("%x" % (Time.now.to_i + rand(65535)))
@@ -289,9 +290,8 @@ module Atom
         probe_for_cafile(http_obj)
       end
 
-      tools_version = Gem.loaded_specs['atom-tools'].version.to_s
       body = "Email=#{CGI.escape(user)}&Passwd=#{CGI.escape(pass)}&service=#{CGI.escape(service)}"
-      body += "&accountType=GOOGLE&source=ruby-atom-tools-#{CGI.escape(tools_version)}"
+      body += "&accountType=GOOGLE&source=ruby-atom-tools-#{CGI.escape(TOOLS_VERSION)}"
       res = http_obj.start do |h|
         h.request(req, body)
       end
