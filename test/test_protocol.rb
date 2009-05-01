@@ -2,6 +2,9 @@ require "test/unit"
 
 require "atom/service"
 
+# needed for hpricot
+require "rubygems"
+
 class FakeHTTP
   Response = Struct.new(:body, :code, :content_type)
 
