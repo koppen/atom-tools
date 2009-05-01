@@ -17,7 +17,7 @@ class String # :nodoc:
 end
 
 module Atom
-  TOOLS_VERSION = '2.0.2'
+  TOOLS_VERSION = '2.0.3'
   UA = "atom-tools " + TOOLS_VERSION
 
   module DigestAuth
