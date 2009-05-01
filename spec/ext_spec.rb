@@ -27,7 +27,7 @@ describe Atom::Entry do
     entry.slug = 'hallo'
 
     entry.to_s.should =~ /sl:slug/
-    entry.to_s.should =~ /xmlns:sl="#{SLUG_NS}"/
+    entry.to_s.should =~ /xmlns:sl='#{Atom::SLUG_NS}'/
   end
 
   describe 'in-reply-to' do

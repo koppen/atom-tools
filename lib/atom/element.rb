@@ -288,7 +288,10 @@ module Atom # :nodoc:
 
       self.on_build do |e,x|
         if v = e.get(name)
-          e.set_atom_attrb(x, name, v.to_s)
+          unless x.namespaces[ns[0]]
+            x.add_namespace *ns
+          end
+          x.attributes["#{ns[0]}:#{name}"] = v.to_s
         end
       end
     end
