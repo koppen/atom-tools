@@ -76,5 +76,5 @@ end
 
 task :install do
   sh %{rake package}
-  sh %{gem install pkg/#{pkg_name}-#{pkg_version}}
+  sh %{gem install pkg/#{NAME}-#{VERS}}
 end
