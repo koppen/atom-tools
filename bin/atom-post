@@ -8,6 +8,7 @@ Usage: atom-post [options] destination [file]
   'file' is the path to a file to POST (default is stdin)
 =end
 
+require 'rubygems'
 require 'atom/tools'
 include Atom::Tools
 
