@@ -103,6 +103,19 @@ describe Atom::Entry do
       @entry.categories.first['term'].should == 'ann'
       @entry.categories.first['scheme'].should == 'http://example.org/cats'
     end
+
+    it 'should parse source element correctly' do
+      @entry.source.title.to_s.should == 'Atom Sample Feed'
+      @entry.source.id.should == 'tag:example.org,2003:/'
+
+      @entry.source.links.length.should == 1
+      @entry.source.links.first.rel == 'self'
+
+      @entry.source.authors.length.should == 0
+
+      @entry.source.contributors.length.should == 1
+      @entry.source.contributors.first.name == 'Mark Pilgrim'
+    end
   end
 
   describe 'title element' do

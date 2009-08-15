@@ -3,7 +3,21 @@ require "rexml/document"
 require "atom/element"
 require "atom/text"
 
+require 'atom/feed'
+
 module Atom
+  # this is just a forward declaration since atom/entry includes atom/feed and vice-versa.
+  class Feed < Atom::Element # :nodoc:
+  end
+
+  class Source < Atom::Feed
+    is_atom_element :source
+
+    # TODO: this shouldn't be necessary, but on_init doesn't get inherited the
+    # way I would like it to.
+    @on_init = Atom::Feed.instance_variable_get '@on_init'
+  end
+
   class Control < Atom::Element
     attr_accessor :draft
 
@@ -17,45 +31,6 @@ module Atom
       unless (v = e.get(:draft)).nil?
         el = e.append_elem(x, ['app', PP_NS], 'draft')
         el.text = (v ? 'yes' : 'no')
-      end
-    end
-  end
-
-  module HasCategories
-    def HasCategories.included(klass)
-      klass.atom_elements :category, :categories, Atom::Category
-    end
-
-    # categorize the entry with each of an array or a space-separated
-    #   string
-    def tag_with(tags, delimiter = ' ')
-      return if not tags or tags.empty?
-
-      tag_list = unless tags.is_a?(String)
-                   tags
-                 else
-                   tags = tags.split(delimiter)
-                   tags.map! { |t| t.strip }
-                   tags.reject! { |t| t.empty? }
-                   tags.uniq
-                 end
-
-      tag_list.each do |tag|
-        unless categories.any? { |c| c.term == tag }
-          categories.new :term => tag
-        end
-      end
-    end
-  end
-
-  module HasLinks
-    def HasLinks.included(klass)
-      klass.atom_elements :link, :links, Atom::Link
-    end
-
-    def find_link(criteria)
-      self.links.find do |l|
-        criteria.all? { |k,v| l.send(k) == v }
       end
     end
   end
@@ -94,7 +69,7 @@ module Atom
 
     atom_element :rights, Atom::Rights
 
-    # element :source, Atom::Feed  # XXX complicated, eg. serialization
+    atom_element :source, Atom::Source
 
     atom_time :published
     atom_time :updated

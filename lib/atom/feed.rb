@@ -5,6 +5,10 @@ require "atom/entry"
 require "atom/http"
 
 module Atom
+  # this is just a forward declaration since atom/entry includes atom/feed and vice-versa.
+  class Entry < Atom::Element # :nodoc:
+  end
+
   class FeedGone < RuntimeError # :nodoc:
   end
 

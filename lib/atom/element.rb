@@ -507,7 +507,7 @@ module Atom # :nodoc:
         @attrs
       end
 
-      self.class.initters do |init|
+      self.class.run_initters do |init|
         self.instance_eval &init
       end
 
@@ -521,9 +521,8 @@ module Atom # :nodoc:
       @on_init << block
     end
 
-    def self.initters &block
-      @on_init ||= []
-      @on_init.each &block
+    def self.run_initters &block
+      @on_init.each(&block) if @on_init
     end
 
     # appends an element named 'name' in namespace 'ns' to 'root'
@@ -643,5 +642,44 @@ module Atom # :nodoc:
 
   class Contributor < Atom::Person
     is_atom_element :contributor
+  end
+
+  module HasLinks
+    def HasLinks.included(klass)
+      klass.atom_elements :link, :links, Atom::Link
+    end
+
+    def find_link(criteria)
+      self.links.find do |l|
+        criteria.all? { |k,v| l.send(k) == v }
+      end
+    end
+  end
+
+  module HasCategories
+    def HasCategories.included(klass)
+      klass.atom_elements :category, :categories, Atom::Category
+    end
+
+    # categorize the entry with each of an array or a space-separated
+    #   string
+    def tag_with(tags, delimiter = ' ')
+      return if not tags or tags.empty?
+
+      tag_list = unless tags.is_a?(String)
+                   tags
+                 else
+                   tags = tags.split(delimiter)
+                   tags.map! { |t| t.strip }
+                   tags.reject! { |t| t.empty? }
+                   tags.uniq
+                 end
+
+      tag_list.each do |tag|
+        unless categories.any? { |c| c.term == tag }
+          categories.new :term => tag
+        end
+      end
+    end
   end
 end
