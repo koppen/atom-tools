@@ -41,8 +41,10 @@ module Atom
               x.name = x.name
             end
           end
-        else
+        elsif ['text', 'html'].include?(type)
           c = x[0] ? x[0].value : nil
+        else
+          c = x
         end
       else
         c = x.to_s
@@ -120,8 +122,8 @@ module Atom
         fixed = Hpricot(self.to_s, :xhtml_strict => true)
         xml = REXML::Document.new("<div>#{fixed}</div>").root
       else
-        # XXX check that @type is an XML mimetype and parse it
-        raise "I haven't implemented this yet"
+        # Not XHTML, HTML, or text - return the REXML::Element, leave it up to the user to parse the content
+        xml = @content
       end
 
       xml

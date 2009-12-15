@@ -340,7 +340,6 @@ describe Atom::Entry do
     end
   end
 
-
   describe 'extensions' do
     before(:each) do
       @entry = Atom::Entry.parse(fixtures('entry-w-ext'))
@@ -348,6 +347,13 @@ describe Atom::Entry do
 
     it 'should preserve namespaces' do
       @entry.to_s.should =~ /purl/
+    end
+  end
+
+  describe "with XML in the content element" do
+    it "should expose the content XML" do
+      @entry = Atom::Entry.parse(fixtures('entry-w-xml'))
+      @entry.content.xml.should be_instance_of(REXML::Element)
     end
   end
 end
