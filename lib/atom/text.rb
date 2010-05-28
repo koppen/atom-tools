@@ -55,9 +55,16 @@ module Atom
 
     on_build do |e,x|
       c = e.instance_variable_get('@content')
-
       if c.respond_to? :parent
-        x << c.dup
+        if c.is_a?(REXML::Element) && c.name == 'content' # && !c.text.strip == ''
+          # c
+          c.children.each do |child_element|
+            x.add_element(child_element) unless child_element.is_a?(REXML::Text) && child_element.to_s.strip == ''
+          end
+          # x.add_text('') # unless child_element.to_s.strip == ''
+        else
+          x << c.dup
+        end
       elsif c
         x.text = c.to_s
       end
@@ -190,7 +197,7 @@ module Atom
   # Atom::Content behaves the same as an Atom::Text, but for two things:
   #
   # * the "type" attribute can be an arbitrary media type
-  # * there is a "src" attribute which is an IRI that points to the content of the entry (in which case the content element will be empty)
+  # * there is a "src" attribute which is an URI that points to the content of the entry (in which case the content element will be empty)
   class Content < Atom::Text
     is_atom_element :content
 
