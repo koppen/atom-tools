@@ -355,5 +355,10 @@ describe Atom::Entry do
       @entry = Atom::Entry.parse(fixtures('entry-w-xml'))
       @entry.content.xml.should be_instance_of(REXML::Element)
     end
+
+    it "should expose the content XML" do
+      @entry = Atom::Entry.parse(fixtures('entry-w-xml'))
+      @entry.content.xml.root.name.should_not == 'content'
+    end
   end
 end
