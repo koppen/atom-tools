@@ -7,7 +7,7 @@ require "spec/rake/spectask"
 require "rake/clean"
 
 NAME = "atom-tools"
-VERS = "2.0.4"
+VERS = "2.0.5"
 
 task :default => [:spec]
 
